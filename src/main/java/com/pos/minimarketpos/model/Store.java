@@ -21,7 +21,7 @@ public class Store {
     private Long id;
 
     private String name;
-    private String adresse;
+    private String adresses;
     private String phone;
 
     @Column(name = "footer_text")
