@@ -1,0 +1,13 @@
+package com.pos.minimarketpos.repository;
+
+import com.pos.minimarketpos.model.Payment;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface PaymentRepository extends JpaRepository<Payment, Long> {
+    List<Payment> findBySaleId(Long saleId);
+    List<Payment> findByRegisterId(Long registerId);
+}
