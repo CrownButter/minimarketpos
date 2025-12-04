@@ -21,11 +21,25 @@ public class Register {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // --- PERUBAHAN PENTING DI SINI ---
+
+    // Ganti Long userId menjadi User user (Asumsi Anda punya User entity)
+    // Jika User entity belum siap, sementara biarkan Long userId,
+    // tapi Store WAJIB diubah untuk fitur statistik.
+
     @Column(name = "user_id")
     private Long userId;
+    // Idealnya:
+    // @ManyToOne(fetch = FetchType.LAZY)
+    // @JoinColumn(name = "user_id")
+    // private User user;
 
-    @Column(name = "store_id")
-    private Long storeId;
+    // Ganti Long storeId menjadi Store store
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "store_id") // Ini akan tetap membuat kolom 'store_id' di DB
+    private Store store;
+
+    // --- BATAS PERUBAHAN ---
 
     @Column(name = "cash_inhand", precision = 10, scale = 2)
     private BigDecimal cashInhand;

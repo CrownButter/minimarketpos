@@ -3,7 +3,9 @@ package com.pos.minimarketpos.service;
 import com.pos.minimarketpos.dto.response.RegisterDTO;
 import com.pos.minimarketpos.exception.ResourceNotFoundException;
 import com.pos.minimarketpos.model.Register;
+import com.pos.minimarketpos.model.Store;
 import com.pos.minimarketpos.repository.RegisterRepository;
+import com.pos.minimarketpos.repository.StoreRepository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ import java.util.stream.Collectors;
 public class RegisterService {
 
     private final RegisterRepository registerRepository;
+    private final StoreRepository storeRepository;
     private final ModelMapper modelMapper;
 
     @Transactional(readOnly = true)
@@ -45,6 +48,7 @@ public class RegisterService {
 
     @Transactional(readOnly = true)
     public List<RegisterDTO> getRegistersByStore(Long storeId) {
+        // JPA cukup pintar untuk mapping storeId ke store.id secara otomatis di repository
         return registerRepository.findByStoreId(storeId).stream()
                 .map(register -> modelMapper.map(register, RegisterDTO.class))
                 .collect(Collectors.toList());
@@ -58,15 +62,20 @@ public class RegisterService {
 
     @Transactional
     public RegisterDTO openRegister(Long userId, Long storeId, BigDecimal cashInhand) {
-        // Check if there's already an open register for this store
+        // 1. Cek apakah ada register yang masih terbuka
         Optional<Register> existingRegister = registerRepository.findByStoreIdAndStatus(storeId, 1);
         if (existingRegister.isPresent()) {
             throw new IllegalArgumentException("A register is already open for this store");
         }
 
+        // 2. Fetch Entity Store (WAJIB dilakukan karena perubahan relasi Entity)
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Store not found with id: " + storeId));
+
+        // 3. Build Register menggunakan Object Store
         Register register = Register.builder()
                 .userId(userId)
-                .storeId(storeId)
+                .store(store) // FIX: Menggunakan objek Store, bukan storeId(Long)
                 .cashInhand(cashInhand)
                 .cashTotal(BigDecimal.ZERO)
                 .cashSub(BigDecimal.ZERO)
@@ -75,7 +84,7 @@ public class RegisterService {
                 .chequeTotal(BigDecimal.ZERO)
                 .chequeSub(BigDecimal.ZERO)
                 .date(LocalDateTime.now())
-                .status(1) // Open
+                .status(1) // 1 = Open
                 .build();
 
         Register savedRegister = registerRepository.save(register);
@@ -91,7 +100,7 @@ public class RegisterService {
             throw new IllegalArgumentException("Register is already closed");
         }
 
-        register.setStatus(0); // Closed
+        register.setStatus(0); // 0 = Closed
         register.setClosedBy(closedBy);
         register.setClosedAt(LocalDateTime.now());
         register.setNote(note);
@@ -146,9 +155,12 @@ public class RegisterService {
         Register register = registerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Register not found with id: " + id));
 
-        return register.getCashInhand()
-                .add(register.getCashTotal())
-                .add(register.getCcTotal())
-                .add(register.getChequeTotal());
+        // Mencegah NullPointerException jika nilai awal null (opsional, tapi aman)
+        BigDecimal cash = register.getCashInhand() != null ? register.getCashInhand() : BigDecimal.ZERO;
+        BigDecimal cashTotal = register.getCashTotal() != null ? register.getCashTotal() : BigDecimal.ZERO;
+        BigDecimal cc = register.getCcTotal() != null ? register.getCcTotal() : BigDecimal.ZERO;
+        BigDecimal cheque = register.getChequeTotal() != null ? register.getChequeTotal() : BigDecimal.ZERO;
+
+        return cash.add(cashTotal).add(cc).add(cheque);
     }
 }

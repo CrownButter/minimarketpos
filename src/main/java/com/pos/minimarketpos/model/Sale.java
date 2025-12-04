@@ -1,4 +1,5 @@
 package com.pos.minimarketpos.model;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -65,8 +66,14 @@ public class Sale {
 
     private String paidmethod;
 
-    @Column(name = "register_id")
-    private Long registerId;
+    // Mengubah ID angka menjadi Relasi ke Object Register
+    // Kolom di database tetap "register_id", jadi data lama aman.
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "register_id")
+    private Register register;
+
+    // -------------------------------
 
     @PrePersist
     protected void onCreate() {

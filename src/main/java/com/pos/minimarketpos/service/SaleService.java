@@ -3,10 +3,12 @@ package com.pos.minimarketpos.service;
 import com.pos.minimarketpos.dto.request.SaleRequest;
 import com.pos.minimarketpos.dto.response.SaleDTO;
 import com.pos.minimarketpos.exception.ResourceNotFoundException;
+import com.pos.minimarketpos.model.Register;
 import com.pos.minimarketpos.model.Sale;
 import com.pos.minimarketpos.model.SaleItem;
-import com.pos.minimarketpos.repository.SaleRepository;
+import com.pos.minimarketpos.repository.RegisterRepository;
 import com.pos.minimarketpos.repository.SaleItemRepository;
+import com.pos.minimarketpos.repository.SaleRepository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ public class SaleService {
 
     private final SaleRepository saleRepository;
     private final SaleItemRepository saleItemRepository;
+    private final RegisterRepository registerRepository; // 1. Inject RegisterRepository
     private final ModelMapper modelMapper;
 
     @Transactional(readOnly = true)
@@ -62,6 +65,10 @@ public class SaleService {
 
     @Transactional
     public SaleDTO createSale(SaleRequest request, String username) {
+        // 2. Fetch Register Entity dari Database
+        Register register = registerRepository.findById(request.getRegisterId())
+                .orElseThrow(() -> new ResourceNotFoundException("Register not found with id: " + request.getRegisterId()));
+
         Sale sale = Sale.builder()
                 .clientId(request.getClientId())
                 .clientname(request.getClientname())
@@ -75,7 +82,10 @@ public class SaleService {
                 .firstpayement(request.getPaid())
                 .totalitems(request.getTotalitems())
                 .paidmethod(request.getPaidmethod())
-                .registerId(request.getRegisterId())
+
+                // 3. Masukkan Object Register (Bukan ID long)
+                .register(register)
+
                 .createdBy(username)
                 .status(request.getPaid().compareTo(request.getTotal()) >= 0 ? 0 : 1)
                 .build();
@@ -101,6 +111,8 @@ public class SaleService {
         sale.setTotalitems(request.getTotalitems());
         sale.setPaidmethod(request.getPaidmethod());
         sale.setModifiedAt(LocalDateTime.now());
+
+        // Note: Biasanya Register tidak berubah saat update sale, jadi tidak perlu di-set ulang
 
         Sale updatedSale = saleRepository.save(sale);
         return modelMapper.map(updatedSale, SaleDTO.class);

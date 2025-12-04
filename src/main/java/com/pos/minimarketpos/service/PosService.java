@@ -164,7 +164,8 @@ public class PosService {
                 .firstpayement(request.getPaid())
                 .totalitems(request.getTotalitems())
                 .paidmethod(request.getPaidmethod())
-                .registerId(request.getRegisterId())
+//                .registerId(request.getRegisterId())
+                .register(register)
                 .createdBy(username)
                 .status(request.getPaid().compareTo(request.getTotal()) >= 0 ? 0 : 1)
                 .build();
@@ -187,7 +188,8 @@ public class PosService {
 
             // Reduce stock
             try {
-                stockService.reduceStock(register.getStoreId(), cartItem.getProductId(), cartItem.getQt());
+                // FIX: register.getStoreId() -> register.getStore().getId()
+                stockService.reduceStock(register.getStore().getId(), cartItem.getProductId(), cartItem.getQt());
             } catch (InsufficientStockException e) {
                 throw new InsufficientStockException("Insufficient stock for product: " + cartItem.getName());
             }
