@@ -18,7 +18,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
+import org.springframework.security.config.Customizer;
 /**
  * Security Configuration for Spring Security 7.0.0
  * Compatible with Spring Boot 4.0.0
@@ -38,7 +38,7 @@ public class SecurityConfig {
         http
                 // Disable CSRF for stateless API
                 .csrf(AbstractHttpConfigurer::disable)
-
+                .cors(Customizer.withDefaults())
                 // Configure authorization rules
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints

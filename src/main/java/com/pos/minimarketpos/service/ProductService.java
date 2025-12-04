@@ -5,6 +5,7 @@ import com.pos.minimarketpos.dto.response.ProductDTO;
 import com.pos.minimarketpos.exception.ResourceNotFoundException;
 import com.pos.minimarketpos.model.Product;
 import com.pos.minimarketpos.repository.ProductRepository;
+import com.pos.minimarketpos.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -20,18 +21,20 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final ModelMapper modelMapper;
+    private final StockRepository stockRepository;
+
 
     @Transactional(readOnly = true)
     public List<ProductDTO> getAllProducts() {
         return productRepository.findAll().stream()
-                .map(product -> modelMapper.map(product, ProductDTO.class))
+                .map(this::mapToDTOWithStock) // Menggunakan helper method
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public List<ProductDTO> getProductsByFilters(String supplier, String type) {
         return productRepository.findByFilters(supplier, type).stream()
-                .map(product -> modelMapper.map(product, ProductDTO.class))
+                .map(this::mapToDTOWithStock)
                 .collect(Collectors.toList());
     }
 
@@ -39,14 +42,14 @@ public class ProductService {
     public ProductDTO getProductById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
-        return modelMapper.map(product, ProductDTO.class);
+        return mapToDTOWithStock(product);
     }
 
     @Transactional(readOnly = true)
     public ProductDTO getProductByCode(String code) {
         Product product = productRepository.findByCode(code)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with code: " + code));
-        return modelMapper.map(product, ProductDTO.class);
+        return mapToDTOWithStock(product);
     }
 
     @Transactional
@@ -73,6 +76,7 @@ public class ProductService {
                 .build();
 
         Product savedProduct = productRepository.save(product);
+        // Produk baru stoknya pasti 0, jadi pakai mapping biasa
         return modelMapper.map(savedProduct, ProductDTO.class);
     }
 
@@ -97,7 +101,7 @@ public class ProductService {
         product.setModifiedAt(LocalDateTime.now());
 
         Product updatedProduct = productRepository.save(product);
-        return modelMapper.map(updatedProduct, ProductDTO.class);
+        return mapToDTOWithStock(updatedProduct);
     }
 
     @Transactional
@@ -110,7 +114,21 @@ public class ProductService {
     @Transactional(readOnly = true)
     public List<ProductDTO> searchProducts(String term) {
         return productRepository.searchProducts(term).stream()
-                .map(product -> modelMapper.map(product, ProductDTO.class))
+                .map(this::mapToDTOWithStock)
                 .collect(Collectors.toList());
+    }
+
+    // --- HELPER METHOD:
+    private ProductDTO mapToDTOWithStock(Product product) {
+        ProductDTO dto = modelMapper.map(product, ProductDTO.class);
+
+        // Hitung total stok dari semua toko/gudang untuk produk ini
+        Integer totalStock = stockRepository.findByProductId(product.getId())
+                .stream()
+                .mapToInt(stock -> stock.getQuantity())
+                .sum();
+
+        dto.setStock(totalStock);
+        return dto;
     }
 }

@@ -26,5 +26,6 @@ public class ProductDTO {
     private String hStores;
     private LocalDateTime createdAt;
     private LocalDateTime modifiedAt;
+    private Integer stock;
 }
 
