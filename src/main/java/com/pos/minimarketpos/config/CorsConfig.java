@@ -14,11 +14,15 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**") // Terapkan untuk semua endpoint URL
-                        .allowedOrigins("http://localhost:5173") // Izinkan hanya dari Frontend Vue
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Method yang diizinkan
-                        .allowedHeaders("*") // Izinkan semua header (termasuk Authorization)
-                        .allowCredentials(true) // Izinkan kredensial (Cookies/Auth Header)
-                        .maxAge(3600); // Cache setting CORS selama 1 jam
+                        .allowedOrigins(
+                                "http://localhost:5500",      // Live Server (localhost)
+                                "http://127.0.0.1:5500",      // Live Server (IP)
+                                "http://localhost:5173"       // Vite Default
+                        )
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedHeaders("*")
+                        .allowCredentials(true)
+                        .maxAge(3600);
             }
         };
     }
